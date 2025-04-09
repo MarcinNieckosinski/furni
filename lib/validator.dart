@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
-
 class Validator {
-
   static String? validateLogin({required String? login}) {
     if (login == null) {
       return null;
@@ -19,15 +16,13 @@ class Validator {
     }
 
     RegExp emailRegExp = RegExp(
-      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*$"
+      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*$",
     );
 
     if (email.isEmpty) {
-      debugPrint('Email is empty!');
-      // return 'Email nie może być pusty!';
+      return 'Email nie może być pusty!';
     } else if (!emailRegExp.hasMatch(email)) {
-      debugPrint('Email is not valid!');
-      // return 'Niepoprawny format adresu email!';
+      return 'Niepoprawny format adresu email!';
     }
 
     return null;
@@ -41,15 +36,15 @@ class Validator {
     if (password.isEmpty) {
       return 'Hasło nie może być puste!';
     } else if (password.length < 8) {
-      return 'Hasło musi mieć co najmniej 8 znaków!';
+      return 'Co najmniej 8 znaków!';
     } else if (!RegExp(r'[A-Z]').hasMatch(password)) {
-      return 'Hasło musi zawierać przynajmniej jedną wielką literę!';
+      return 'Przynajmniej jedna wielka litera!';
     } else if (!RegExp(r'[a-z]').hasMatch(password)) {
-      return 'Hasło musi zawierać przynajmniej jedną małą literę!';
+      return 'Przynajmniej jedna mała litera!';
     } else if (!RegExp(r'[0-9]').hasMatch(password)) {
-      return 'Hasło musi zawierać przynajmniej jedną cyfrę!';
+      return 'Przynajmniej jedna cyfra!';
     } else if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) {
-      return 'Hasło musi zawierać przynajmniej jeden znak specjalny!';
+      return 'Przynajmniej jeden znak specjalny!';
     }
 
     return null;
@@ -71,5 +66,4 @@ class Validator {
 
     return null;
   }
-  
 }

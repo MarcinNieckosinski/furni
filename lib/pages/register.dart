@@ -10,6 +10,11 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final _emailController = TextEditingController();
+  final _loginController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _repeatPasswordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,8 +73,11 @@ class _RegisterPageState extends State<RegisterPage> {
       children: [
         SizedBox(
           width: 250,
-          child: TextField(
+          child: TextFormField(
+            controller: _passwordController,
             obscureText: true,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (value) => Validator.validatePassword(password: value),
             decoration: InputDecoration(
               labelText: 'Hasło',
               border: OutlineInputBorder(),
@@ -86,8 +94,14 @@ class _RegisterPageState extends State<RegisterPage> {
       children: [
         SizedBox(
           width: 250,
-          child: TextField(
+          child: TextFormField(
+            controller: _repeatPasswordController,
             obscureText: true,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (value) => Validator.validatePasswordRepeat(
+              password: _passwordController.text,
+              repeatPassword: value,
+            ),
             decoration: InputDecoration(
               labelText: 'Powtórz hasło',
               border: OutlineInputBorder(),
@@ -104,7 +118,10 @@ class _RegisterPageState extends State<RegisterPage> {
       children: [
         SizedBox(
           width: 250,
-          child: TextField(
+          child: TextFormField(
+            controller: _loginController,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (value) => Validator.validateLogin(login: value),
             decoration: InputDecoration(
               labelText: 'Login',
               border: OutlineInputBorder(),
@@ -122,6 +139,8 @@ class _RegisterPageState extends State<RegisterPage> {
         SizedBox(
           width: 250,
           child: TextFormField(
+            controller: _emailController,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             decoration: InputDecoration(
               labelText: 'Email',
               border: OutlineInputBorder(),
