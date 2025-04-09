@@ -1,0 +1,4 @@
+#TODO
+
+Dodać kontenerek dla pojedynczej kategorii żeby wyświetlało 5 najnowszych
+Dodać te kontenerki dla każdej z kategorii

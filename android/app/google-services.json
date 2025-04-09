@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "337537219073",
+    "project_id": "furniapp-a28a9",
+    "storage_bucket": "furniapp-a28a9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:337537219073:android:e16fe71efefc04ff8f1e00",
+        "android_client_info": {
+          "package_name": "com.example.furniapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzuczFRjTroM1b6s2KdtnUVrLJB5GSV1Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
