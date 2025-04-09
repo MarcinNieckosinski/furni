@@ -10,13 +10,6 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final _registerFromKey = GlobalKey<FormState>();
-
-  final _emailTextController = TextEditingController();
-  final _focusEmail = FocusNode();
-
-  bool _isProcessing = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,8 +127,6 @@ class _RegisterPageState extends State<RegisterPage> {
               border: OutlineInputBorder(),
             ),
             validator: (value) => Validator.validateEmail(email: value),
-            controller: _emailTextController,
-            focusNode: _focusEmail,
           ),
         ),
       ],
