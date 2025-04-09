@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:furniapp/pages/home.dart';
 import 'package:furniapp/pages/register.dart';
+import 'package:furniapp/validator.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,25 +11,32 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _loginController = TextEditingController();
+  final _passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: ListView(
+        padding: EdgeInsets.only(top: 100),
         children: [
-          logoImage(),
-          welcomeText(),
-          loginSubtext(),
-          SizedBox(height: 20),
-          loginTextfield(),
-          SizedBox(height: 10),
-          passwordTextfield(),
-          SizedBox(height: 10),
-          loginButton(),
-          SizedBox(height: 20),
-          registerSubtext(),
-          toMainPageSubtext()
+          Column(
+            children: [
+              logoImage(),
+              welcomeText(),
+              loginSubtext(),
+              SizedBox(height: 20),
+              loginTextfield(),
+              SizedBox(height: 10),
+              passwordTextfield(),
+              SizedBox(height: 10),
+              loginButton(),
+              SizedBox(height: 20),
+              registerSubtext(),
+              toMainPageSubtext(),
+            ],
+          ),
         ],
       ),
     );
@@ -40,7 +48,11 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         SizedBox(
           width: 250,
-          child: TextField(
+          child: TextFormField(
+            controller: _passwordController,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator:
+                (value) => Validator.validatePasswordOnLogin(password: value),
             obscureText: true,
             decoration: InputDecoration(
               labelText: 'Hasło',
@@ -58,7 +70,10 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         SizedBox(
           width: 250,
-          child: TextField(
+          child: TextFormField(
+            controller: _loginController,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (value) => Validator.validateLogin(login: value),
             decoration: InputDecoration(
               labelText: 'Login',
               border: OutlineInputBorder(),
@@ -110,7 +125,10 @@ class _LoginPageState extends State<LoginPage> {
         ),
         TextButton(
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => RegisterPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => RegisterPage()),
+            );
           },
           child: Text(
             'Zarejestruj się',
@@ -127,12 +145,12 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         TextButton(
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+            );
           },
-          child: Text(
-            'Na stronę główną',
-            style: TextStyle(fontSize: 16),
-          ),
+          child: Text('Na stronę główną', style: TextStyle(fontSize: 16)),
         ),
       ],
     );

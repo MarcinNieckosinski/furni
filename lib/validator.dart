@@ -28,6 +28,18 @@ class Validator {
     return null;
   }
 
+  static String? validatePasswordOnLogin({required String? password}) {
+    if (password == null) {
+      return null;
+    }
+
+    if (password.isEmpty) {
+      return 'Hasło nie może być puste!';
+    }
+
+    return null;
+  }
+
   static String? validatePassword({required String? password}) {
     if (password == null) {
       return null;
