@@ -1,4 +1,7 @@
 #TODO
 
-Dodać kontenerek dla pojedynczej kategorii żeby wyświetlało 5 najnowszych
-Dodać te kontenerki dla każdej z kategorii
+Sprawdzić poprawki w Register.dart
+Zapewnić logowanko i odpowiedni render plus toast
+Zapewnić stronę ze zmianą hasła
+Ogarnąć bazę danych żeby móc cokolwiek Dodać
+Ogarnąć page dla ogłoszenia
