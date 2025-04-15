@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:furniapp/pages/home.dart';
 import 'package:furniapp/pages/register.dart';
 import 'package:furniapp/validator.dart';
@@ -11,6 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _auth = FirebaseAuth.instance;
   final _loginController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -157,6 +160,36 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   OutlinedButton loginButton() {
-    return OutlinedButton(onPressed: () {}, child: Text('Zaloguj'));
+    return OutlinedButton(
+      onPressed: () async {
+        try {
+          final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+            email: _loginController.text,
+            password: _passwordController.text,
+          );
+          if (userCredential.user != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Zalogowano pomyślnie!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+            );
+          }
+        } catch (e) {
+          print(e.toString());
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Niepoprawny login lub hasło!'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Text('Zaloguj'),
+    );
   }
 }

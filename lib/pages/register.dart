@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:furniapp/pages/home.dart';
 import 'package:furniapp/validator.dart';
@@ -17,6 +18,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _loginController = TextEditingController();
   final _passwordController = TextEditingController();
   final _repeatPasswordController = TextEditingController();
+  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +42,7 @@ class _RegisterPageState extends State<RegisterPage> {
           SizedBox(height: 10),
           returnButton(),
           SizedBox(height: 10),
-          toMainPageSubtext()
+          toMainPageSubtext(),
         ],
       ),
     );
@@ -101,10 +103,11 @@ class _RegisterPageState extends State<RegisterPage> {
             controller: _repeatPasswordController,
             obscureText: true,
             autovalidateMode: AutovalidateMode.onUserInteraction,
-            validator: (value) => Validator.validatePasswordRepeat(
-              password: _passwordController.text,
-              repeatPassword: value,
-            ),
+            validator:
+                (value) => Validator.validatePasswordRepeat(
+                  password: _passwordController.text,
+                  repeatPassword: value,
+                ),
             decoration: InputDecoration(
               labelText: 'Powtórz hasło',
               border: OutlineInputBorder(),
@@ -156,32 +159,47 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   OutlinedButton registerButton() {
-    return OutlinedButton(onPressed: () async {
-      try {
-        final UserCredential? newUser = await _auth.createUserWithEmailAndPassword(email: _emailController.text, password: _passwordController.text);
-        if (newUser != null) {
-          Fluttertoast.showToast(
-            msg: 'Zarejestrowano pomyślnie! Zaloguj się do aplikacji.',
-             toastLength: Toast.LENGTH_LONG,
-             gravity: ToastGravity.BOTTOM,
-             backgroundColor: Colors.green,
-             textColor: Colors.white,
-             fontSize: 16.0
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => HomePage()),
-          );
+    return OutlinedButton(
+      onPressed: () async {
+        try {
+          final UserCredential newUser = await _auth
+              .createUserWithEmailAndPassword(
+                email: _emailController.text,
+                password: _passwordController.text,
+              );
+          // ignore: unnecessary_null_comparison
+          if (newUser != null) {
+            _databaseRef.child("users").set({_loginController.text: _emailController.text}).then((value){
+              Fluttertoast.showToast(
+                  msg: 'Zarejestrowano pomyślnie! Zaloguj się do aplikacji.',
+                  toastLength: Toast.LENGTH_LONG,
+                  gravity: ToastGravity.BOTTOM,
+                  backgroundColor: Colors.green,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+                if (!mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              });
+          }
+        } catch (e) {
+          debugPrint(e.toString());
         }
-      }
-      catch (e) {
-        debugPrint(e.toString());
-      }
-    }, child: Text('Zarejestruj'));
+      },
+      child: Text('Zarejestruj'),
+    );
   }
 
   OutlinedButton returnButton() {
-    return OutlinedButton(onPressed: () {Navigator.pop(context);}, child: Text('Powróć'));
+    return OutlinedButton(
+      onPressed: () {
+        Navigator.pop(context);
+      },
+      child: Text('Powróć'),
+    );
   }
 
   Row toMainPageSubtext() {

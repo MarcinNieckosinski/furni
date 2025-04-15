@@ -2,6 +2,7 @@
   "project_info": {
     "project_number": "337537219073",
     "project_id": "furniapp-a28a9",
+    "firebase_url": "https://furniapp-a28a9-default-rtdb.europe-west1.firebasedatabase.app/",
     "storage_bucket": "furniapp-a28a9.firebasestorage.app"
   },
   "client": [
