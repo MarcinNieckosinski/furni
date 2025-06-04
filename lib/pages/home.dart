@@ -5,6 +5,7 @@ import 'package:furniapp/components/latest.dart';
 import 'package:furniapp/models/category_model.dart';
 import 'package:furniapp/components/searchfield.dart';
 import 'package:furniapp/models/latest_sections_model.dart';
+import 'package:furniapp/pages/addition.dart';
 import 'package:furniapp/pages/login.dart';
 import 'package:furniapp/pages/register.dart';
 
@@ -97,6 +98,12 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(context, MaterialPageRoute(builder: (context) => RegisterPage()));
             },
           ),
+          ListTile(
+            title: Center(child: Text('Dodaj ogłoszenie')),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => AdditionPage()));
+            }
+          )
         ],
       ),
     );
