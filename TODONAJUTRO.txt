@@ -5,3 +5,6 @@ Ogarnąć działanie szukajki plus może jakieś filtry
 Ogarnąć przeniesienie po kliknięciu kategorii do ogłoszeń tylko z tej kategorii z możliwością pofiltrowania
 Ogarnąć logowanie żeby zmieniał się boczny panel na poprawny
 Jak nie ma zalogowanego to po kliknięciu dodaj ogłoszenie niech kieruje na zaloguj się
+Ogarnąć może jakieś logo usera
+Dodać "Twoje ogłoszenia" i możliwość usuwania
+Ogarnąć przetrzymywanie zdjęć
