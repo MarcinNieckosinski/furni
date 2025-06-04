@@ -1,5 +1,7 @@
 #TODO
-DODAĆ LOADER (KRĘCIDEŁKO PODCZAS LOGOWANIA REJESTROWANIA ITP.)!!
-Zapewnić stronę ze zmianą hasła
-Ogarnąć bazę danych żeby móc cokolwiek Dodać
-Ogarnąć page dla ogłoszenia
+Wypierniczyć mocki ogloszeń i jak puste to nie pokazywać
+Dołożyć miejscowość w ogłoszeniach i numer telefonu
+Ogarnąć działanie szukajki plus może jakieś filtry
+Ogarnąć przeniesienie po kliknięciu kategorii do ogłoszeń tylko z tej kategorii z możliwością pofiltrowania
+Ogarnąć logowanie żeby zmieniał się boczny panel na poprawny
+Jak nie ma zalogowanego to po kliknięciu dodaj ogłoszenie niech kieruje na zaloguj się
