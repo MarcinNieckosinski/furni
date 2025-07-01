@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               searchField(),
               const SizedBox(height: 40),
-              categoriesSection(categories),
+              categoriesSection(categories, context),
               const SizedBox(height: 40),
               for (var section in sections) latestSection(section),
               const Center(child: Text('Furni © by MINT')),
