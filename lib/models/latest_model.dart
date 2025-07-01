@@ -1,3 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+
 class LatestModel {
   String name;
   String imagePath;
@@ -14,51 +18,43 @@ class LatestModel {
     required this.city,
     required this.date,
   });
-
-  static List<LatestModel> getLatest() {
-    List<LatestModel> latestModels = [
-    LatestModel(
-      name: 'Meble testowe',
-      imagePath: 'assets/temporary/tempor.jpg',
-      shortDescription: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-      price: '6000 PLN',
-      city: 'New York',
-      date: '2023-10-01',
-    ),
-    LatestModel(
-      name: 'Inne meble testowe',
-      imagePath: 'assets/temporary/tempor.jpg',
-      shortDescription: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-      price: '350 PLN',
-      city: 'Los Angeles',
-      date: '2023-10-02',
-    ),
-    LatestModel(
-      name: 'Ostatnie meble',
-      imagePath: 'assets/temporary/tempor.jpg',
-      shortDescription: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-      price: '22 PLN',
-      city: 'Chicago',
-      date: '2023-10-03',
-    ),
-    LatestModel(
-      name: 'jeszcze jedne meble',
-      imagePath: 'assets/temporary/tempor.jpg',
-      shortDescription: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-      price: '220000 PLN',
-      city: 'Żółć',
-      date: '2025-11-03',
-    ),
-    LatestModel(
-      name: 'Ostatnio ostatnie meble',
-      imagePath: 'assets/temporary/tempor.jpg',
-      shortDescription: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-      price: '11111 PLN',
-      city: 'Wręczyca',
-      date: '2023-10-03',
-    ),
-  ];
-
-    return latestModels;
-  }
 }
+
+Future<List<LatestModel>> fetchLatest(String category) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('listings')
+        .where('category', isEqualTo: category)
+        .orderBy('createdAt', descending: true)
+        .limit(5)
+        .get();
+    
+    List<LatestModel> latest = [];
+
+    for (var doc in querySnapshot.docs) {
+      final data = doc.data();
+      final listingId = doc.id;
+      final category = data['category'] ?? 'default';
+
+      final storageRef = FirebaseStorage.instance.ref().child('listings/$category/$listingId/${listingId}_image_0.jpg');
+
+      debugPrint('Fetching image from: ${storageRef.fullPath}');
+
+      String imageUrl;
+      try {
+        imageUrl = await storageRef.getDownloadURL();
+      } catch (e) {
+        imageUrl = 'assets/temporary/tempor.jpg'; // Fallback image
+      }
+
+      latest.add(LatestModel(
+        name: data['title'] ?? 'Brak nazwy',
+        imagePath: imageUrl,
+        shortDescription: data['shortDescription'] ?? 'No Description',
+        price: data['price'] != null ? '${data['price']} PLN' : 'Price not available',
+        city: data['city'] ?? 'Unknown City',
+        date: (data['createdAt'] as Timestamp).toDate().toString().split(' ')[0], // Format date
+      ));
+    }
+
+    return latest;
+  }

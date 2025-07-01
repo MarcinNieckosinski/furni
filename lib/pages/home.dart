@@ -18,7 +18,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<CategoryModel> categories = [];
-  List<LatestSectionsModel> latest = [];
+  Future<List<LatestSectionsModel>> latest = Future.value([]);
+
+  void initState() {
+    super.initState();
+    _getInitialInfo();
+  }
 
   void _getCategories() {
     categories = CategoryModel.getCategories();
@@ -41,16 +46,29 @@ class _HomePageState extends State<HomePage> {
       appBar: appBar(),
       backgroundColor: Colors.white,
       drawer: drawer(),
-      body: ListView(
-        children: [
-          searchField(),
-          const SizedBox(height: 40),
-          categoriesSection(categories),
-          const SizedBox(height: 40),
-          for (var section in latest)
-            latestSection(section),
-          Center(child: Text('Furni \u00a9 by MINT'))
-        ],
+      body: FutureBuilder<List<LatestSectionsModel>>(
+        future: latest,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('❌ Błąd: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('Brak ogłoszeń.'));
+          } else {
+            final sections = snapshot.data!;
+            return ListView(
+              children: [
+                searchField(),
+                const SizedBox(height: 40),
+                categoriesSection(categories),
+                const SizedBox(height: 40),
+                for (var section in sections) latestSection(section),
+                const Center(child: Text('Furni \u00a9 by MINT')),
+              ],
+            );
+          }
+        },
       ),
     );
   }
@@ -69,13 +87,10 @@ class _HomePageState extends State<HomePage> {
                 Image(
                   image: AssetImage('assets/images/Portrait_Placeholder.png'),
                   height: 80,
-                  ),
+                ),
                 Text(
                   'Gościnny Gość',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 24),
                 ),
               ],
             ),
@@ -83,27 +98,39 @@ class _HomePageState extends State<HomePage> {
           ListTile(
             title: Center(child: Text('Strona główna')),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
             },
           ),
           ListTile(
             title: Center(child: Text('Zaloguj się')),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()),
+              );
             },
           ),
           ListTile(
             title: Center(child: Text('Zarejestruj się')),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => RegisterPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => RegisterPage()),
+              );
             },
           ),
           ListTile(
             title: Center(child: Text('Dodaj ogłoszenie')),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => AdditionPage()));
-            }
-          )
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AdditionPage()),
+              );
+            },
+          ),
         ],
       ),
     );

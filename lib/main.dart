@@ -3,9 +3,9 @@ import 'package:furniapp/pages/home.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:furniapp/firebase_options.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Firebase.initializeApp(
+  await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(const MyApp());

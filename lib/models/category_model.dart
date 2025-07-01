@@ -45,7 +45,7 @@ class CategoryModel {
     ));
 
     categories.add(CategoryModel(
-      name: 'dziecięcie i młodzieżowe',
+      name: 'dziecięce i młodzieżowe',
       iconPath: 'assets/icons/kid.svg',
       boxColor: const Color(0xFFFA6C00),
     ));
