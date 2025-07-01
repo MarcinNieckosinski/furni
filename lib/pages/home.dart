@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:furniapp/components/appbar.dart';
 import 'package:furniapp/components/categories.dart';
 import 'package:furniapp/components/latest.dart';
-import 'package:furniapp/models/category_model.dart';
 import 'package:furniapp/components/searchfield.dart';
+import 'package:furniapp/models/category_model.dart';
 import 'package:furniapp/models/latest_sections_model.dart';
 import 'package:furniapp/pages/addition.dart';
 import 'package:furniapp/pages/login.dart';
@@ -20,8 +20,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<CategoryModel> categories = [];
-  Future<List<LatestSectionsModel>> latest = Future.value([]);
+  late final List<CategoryModel> categories;
+  Future<List<LatestSectionsModel>> latestSectionsFuture = LatestSectionsModel.getLatestSections();
+
   User? currentUser;
   String loginName = 'Gość';
 
@@ -29,17 +30,15 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     categories = CategoryModel.getCategories();
-    latest = LatestSectionsModel.getLatestSections();
+    latestSectionsFuture = LatestSectionsModel.getLatestSections();
     currentUser = FirebaseAuth.instance.currentUser;
-
     if (currentUser != null) {
       _fetchLoginName(currentUser!.uid);
     }
   }
 
   Future<void> _fetchLoginName(String uid) async {
-    final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
     if (doc.exists) {
       setState(() {
         loginName = doc.data()?['login'] ?? 'Gość';
@@ -54,28 +53,44 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.white,
       drawer: _buildDrawer(),
       body: FutureBuilder<List<LatestSectionsModel>>(
-        future: latest,
+        future: latestSectionsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('❌ Błąd: ${snapshot.error}'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('❌ Błąd: ${snapshot.error}'),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        latestSectionsFuture = LatestSectionsModel.getLatestSections();
+                      });
+                    },
+                    child: const Text('Spróbuj ponownie'),
+                  ),
+                ],
+              ),
+            );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('Brak ogłoszeń.'));
-          } else {
-            final sections = snapshot.data!;
-            return ListView(
-              padding: const EdgeInsets.only(bottom: 30),
-              children: [
-                searchField(),
-                const SizedBox(height: 40),
-                categoriesSection(categories),
-                const SizedBox(height: 40),
-                for (var section in sections) latestSection(section),
-                const Center(child: Text('Furni © by MINT')),
-              ],
-            );
           }
+
+          final sections = snapshot.data!;
+          return ListView(
+            padding: const EdgeInsets.only(bottom: 30),
+            children: [
+              searchField(),
+              const SizedBox(height: 40),
+              categoriesSection(categories),
+              const SizedBox(height: 40),
+              for (var section in sections) latestSection(section),
+              const Center(child: Text('Furni © by MINT')),
+            ],
+          );
         },
       ),
     );
@@ -89,41 +104,25 @@ class _HomePageState extends State<HomePage> {
         padding: EdgeInsets.zero,
         children: [
           _drawerHeader(),
-          _drawerItem('Strona główna', () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const HomePage()),
-            );
+          _drawerItem('Strona główna', Icons.home, () {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
           }),
-          if (!isLoggedIn)
-            _drawerItem('Zaloguj się', () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-              );
+          if (isLoggedIn) ...[
+            _drawerItem('Twoje ogłoszenia', Icons.list, () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const UserListingsPage()));
             }),
-          if (!isLoggedIn)
-            _drawerItem('Zarejestruj się', () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const RegisterPage()),
-              );
+            _drawerItem('Dodaj ogłoszenie', Icons.add_circle_outline, () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdditionPage()));
             }),
-          if (isLoggedIn)
-            _drawerItem('Twoje ogłoszenia', () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const UserListingsPage()),
-              );
+            _drawerItem('Wyloguj', Icons.logout, _handleLogout),
+          ] else ...[
+            _drawerItem('Zaloguj się', Icons.login, () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
             }),
-          if (isLoggedIn)
-            _drawerItem('Dodaj ogłoszenie', () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdditionPage()),
-              );
+            _drawerItem('Zarejestruj się', Icons.person_add, () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage()));
             }),
-          if (isLoggedIn) _drawerItem('Wyloguj', _handleLogout),
+          ],
         ],
       ),
     );
@@ -133,6 +132,7 @@ class _HomePageState extends State<HomePage> {
     return DrawerHeader(
       decoration: BoxDecoration(color: Colors.blue.withOpacity(0.7)),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Image(
             image: AssetImage('assets/images/Portrait_Placeholder.png'),
@@ -148,36 +148,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _drawerItem(String title, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.black87),
+      title: Text(title, style: const TextStyle(fontSize: 16)),
+      onTap: onTap,
+    );
+  }
+
   Future<void> _handleLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Czy na pewno chcesz się wylogować?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Anuluj'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Wyloguj'),
-              ),
-            ],
-          ),
+      builder: (_) => AlertDialog(
+        title: const Text('Czy na pewno chcesz się wylogować?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Anuluj')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Wyloguj')),
+        ],
+      ),
     );
 
     if (confirmed == true) {
       await FirebaseAuth.instance.signOut();
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
     }
-  }
-
-  Widget _drawerItem(String title, VoidCallback onTap) {
-    return ListTile(title: Center(child: Text(title)), onTap: onTap);
   }
 }

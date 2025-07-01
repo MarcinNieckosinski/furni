@@ -3,13 +3,13 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 class LatestModel {
-  String name;
-  String imagePath;
-  String shortDescription;
-  String price;
-  String city;
-  String date;
-  String id;
+  final String name;
+  final String imagePath;
+  final String shortDescription;
+  final String price;
+  final String city;
+  final String date;
+  final String id;
 
   LatestModel({
     required this.name,
@@ -23,41 +23,44 @@ class LatestModel {
 }
 
 Future<List<LatestModel>> fetchLatest(String category) async {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('listings')
-        .where('category', isEqualTo: category)
-        .orderBy('createdAt', descending: true)
-        .limit(5)
-        .get();
-    
-    List<LatestModel> latest = [];
+  final querySnapshot = await FirebaseFirestore.instance
+      .collection('listings')
+      .where('category', isEqualTo: category)
+      .orderBy('createdAt', descending: true)
+      .limit(5)
+      .get();
 
-    for (var doc in querySnapshot.docs) {
-      final data = doc.data();
-      final listingId = doc.id;
-      final category = data['category'] ?? 'default';
+  final latest = await Future.wait(querySnapshot.docs.map((doc) async {
+    final data = doc.data();
+    final listingId = doc.id;
+    final itemCategory = data['category'] ?? 'default';
 
-      final storageRef = FirebaseStorage.instance.ref().child('listings/$category/$listingId/${listingId}_image_0.jpg');
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child('listings/$itemCategory/$listingId/${listingId}_image_0.jpg');
 
-      debugPrint('Fetching image from: ${storageRef.fullPath}');
+    debugPrint('Fetching image from: ${storageRef.fullPath}');
 
-      String imageUrl;
-      try {
-        imageUrl = await storageRef.getDownloadURL();
-      } catch (e) {
-        imageUrl = 'assets/temporary/tempor.jpg'; // Fallback image
-      }
-
-      latest.add(LatestModel(
-        name: data['title'] ?? 'Brak nazwy',
-        imagePath: imageUrl,
-        shortDescription: data['shortDescription'] ?? 'No Description',
-        price: data['price'] != null ? '${data['price']} PLN' : 'Price not available',
-        city: data['city'] ?? 'Unknown City',
-        date: (data['createdAt'] as Timestamp).toDate().toString().split(' ')[0], // Format date
-        id: listingId,
-      ));
+    String imageUrl;
+    try {
+      imageUrl = await storageRef.getDownloadURL();
+    } catch (e) {
+      imageUrl = 'assets/temporary/tempor.jpg'; // fallback na wypadek błędu
     }
 
-    return latest;
-  }
+    return LatestModel(
+      name: data['title'] ?? 'Brak nazwy',
+      imagePath: imageUrl,
+      shortDescription: data['shortDescription'] ?? 'No Description',
+      price: data['price'] != null ? '${data['price']} PLN' : 'Price not available',
+      city: data['city'] ?? 'Unknown City',
+      date: (data['createdAt'] as Timestamp)
+          .toDate()
+          .toIso8601String()
+          .split('T')[0], // yyyy-MM-dd
+      id: listingId,
+    );
+  }));
+
+  return latest;
+}

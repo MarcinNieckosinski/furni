@@ -13,33 +13,35 @@ class LatestSectionsModel {
   });
 
   static Future<List<LatestSectionsModel>> getLatestSections() async {
-    List<String> categories = [
-      'do salonu',
-      'do sypialni',
-      'kuchenne i jadalniane',
-      'do łazienki',
-      'biurowe',
-      'dziecięce i młodzieżowe',
-      'ogrodowe',
-      'dekoracje i dodatki',
-    ];
-    List<LatestSectionsModel> latestSections = [];
+    final categories = _getCategoryList();
 
-    for (var category in categories) {
-      final latestListings = await fetchLatest(category);
+    final latestSections = await Future.wait(categories.map((category) async {
+      final listings = await fetchLatest(category);
       final color = _getColorForCategory(category);
-      latestSections.add(LatestSectionsModel(
+
+      return LatestSectionsModel(
         color: color,
         name: category,
-        latest: latestListings,
-      ));
-    }
+        latest: listings,
+      );
+    }));
 
     return latestSections;
   }
 
+  static List<String> _getCategoryList() => const [
+        'do salonu',
+        'do sypialni',
+        'kuchenne i jadalniane',
+        'do łazienki',
+        'biurowe',
+        'dziecięce i młodzieżowe',
+        'ogrodowe',
+        'dekoracje i dodatki',
+      ];
+
   static Color _getColorForCategory(String category) {
-    final map = {
+    const colorMap = {
       'do salonu': Color(0xFF00FA8C),
       'do sypialni': Color(0xFFFAAA00),
       'kuchenne i jadalniane': Color(0xFFB2BA55),
@@ -49,6 +51,6 @@ class LatestSectionsModel {
       'ogrodowe': Color(0xFF3798A5),
       'dekoracje i dodatki': Color(0xFF3D7A5F),
     };
-    return map[category] ?? Colors.grey;
+    return colorMap[category] ?? Colors.grey;
   }
 }

@@ -14,30 +14,46 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _auth = FirebaseAuth.instance;
+  final _formKey = GlobalKey<FormState>();
   final _loginController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _loginController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: ListView(
-        padding: EdgeInsets.only(top: 100),
+        padding: const EdgeInsets.only(top: 100),
         children: [
           Column(
             children: [
-              logoImage(),
-              welcomeText(),
-              loginSubtext(),
-              SizedBox(height: 20),
-              loginTextfield(),
-              SizedBox(height: 10),
-              passwordTextfield(),
-              SizedBox(height: 10),
-              loginButton(),
-              SizedBox(height: 20),
-              registerSubtext(),
-              toMainPageSubtext(),
+              _logoImage(),
+              _welcomeText(),
+              _loginSubtext(),
+              const SizedBox(height: 20),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _loginTextfield(),
+                    const SizedBox(height: 10),
+                    _passwordTextfield(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              _loginButton(),
+              const SizedBox(height: 20),
+              _registerSubtext(),
+              _toMainPageSubtext(),
             ],
           ),
         ],
@@ -45,151 +61,128 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Row passwordTextfield() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 250,
-          child: TextFormField(
-            controller: _passwordController,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            validator:
-                (value) => Validator.validatePasswordOnLogin(password: value),
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: 'Hasło',
-              border: OutlineInputBorder(),
+  Widget _passwordTextfield() {
+    return SizedBox(
+      width: 250,
+      child: TextFormField(
+        controller: _passwordController,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (value) => Validator.validatePasswordOnLogin(password: value),
+        obscureText: _obscurePassword,
+        decoration: InputDecoration(
+          labelText: 'Hasło',
+          border: const OutlineInputBorder(),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword ? Icons.visibility_off : Icons.visibility,
             ),
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
           ),
         ),
-      ],
+      ),
     );
   }
 
-  Row loginTextfield() {
+  Widget _loginTextfield() {
+    return SizedBox(
+      width: 250,
+      child: TextFormField(
+        controller: _loginController,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (value) => Validator.validateLogin(login: value),
+        keyboardType: TextInputType.emailAddress,
+        decoration: const InputDecoration(
+          labelText: 'Login',
+          border: OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
+  Widget _loginSubtext() {
+    return const Text(
+      'Zaloguj się, aby kontynuować',
+      style: TextStyle(fontSize: 16, color: Colors.grey),
+    );
+  }
+
+  Widget _welcomeText() {
+    return const Text(
+      'Witaj w Furni',
+      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _logoImage() {
+    return const Image(
+      image: AssetImage('assets/images/Design.jpg'),
+      height: 120,
+    );
+  }
+
+  Widget _registerSubtext() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 250,
-          child: TextFormField(
-            controller: _loginController,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            validator: (value) => Validator.validateLogin(login: value),
-            decoration: InputDecoration(
-              labelText: 'Login',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Row loginSubtext() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Zaloguj się, aby kontynuować',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-        ),
-      ],
-    );
-  }
-
-  Row welcomeText() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Witaj w Furni',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
-  Row logoImage() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [Image(image: AssetImage('assets/images/Design.jpg'))],
-    );
-  }
-
-  Row registerSubtext() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Nie masz konta?',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-        ),
+        const Text('Nie masz konta?', style: TextStyle(fontSize: 16, color: Colors.grey)),
         TextButton(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => RegisterPage()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage()));
           },
-          child: Text(
-            'Zarejestruj się',
-            style: TextStyle(fontSize: 16, color: Colors.blue),
-          ),
+          child: const Text('Zarejestruj się', style: TextStyle(fontSize: 16, color: Colors.blue)),
         ),
       ],
     );
   }
 
-  Row toMainPageSubtext() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        TextButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => HomePage()),
-            );
-          },
-          child: Text('Na stronę główną', style: TextStyle(fontSize: 16)),
-        ),
-      ],
+  Widget _toMainPageSubtext() {
+    return TextButton(
+      onPressed: () {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+      },
+      child: const Text('Na stronę główną', style: TextStyle(fontSize: 16)),
     );
   }
 
-  OutlinedButton loginButton() {
+  Widget _loginButton() {
     return OutlinedButton(
       onPressed: () async {
+        if (!_formKey.currentState!.validate()) return;
+
         try {
-          final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-            email: _loginController.text,
-            password: _passwordController.text,
+          final credential = await _auth.signInWithEmailAndPassword(
+            email: _loginController.text.trim(),
+            password: _passwordController.text.trim(),
           );
-          if (userCredential.user != null) {
+
+          if (credential.user != null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text('Zalogowano pomyślnie!'),
                 backgroundColor: Colors.green,
               ),
             );
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => HomePage()),
-            );
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
           }
         } catch (e) {
-          print(e.toString());
+          debugPrint(e.toString());
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text('Niepoprawny login lub hasło!'),
               backgroundColor: Colors.red,
             ),
           );
         }
       },
-      child: Text('Zaloguj'),
+      style: OutlinedButton.styleFrom(
+        fixedSize: const Size(200, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: const Text('Zaloguj', style: TextStyle(fontSize: 18)),
     );
   }
 }

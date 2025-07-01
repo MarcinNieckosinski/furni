@@ -8,14 +8,23 @@ class UserListingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String uid = FirebaseAuth.instance.currentUser!.uid;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: Text('Brak zalogowanego użytkownika')),
+      );
+    }
+
     final listingsRef = FirebaseFirestore.instance
         .collection('listings')
-        .where('userId', isEqualTo: uid)
+        .where('userId', isEqualTo: user.uid)
         .orderBy('createdAt', descending: true);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Twoje ogłoszenia')),
+      appBar: AppBar(
+        title: const Text('Twoje ogłoszenia'),
+        centerTitle: true,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: listingsRef.snapshots(),
         builder: (context, snapshot) {
@@ -29,26 +38,26 @@ class UserListingsPage extends StatelessWidget {
 
           final docs = snapshot.data!.docs;
 
-          return ListView.builder(
+          return ListView.separated(
             itemCount: docs.length,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            separatorBuilder: (_, __) => const Divider(height: 0),
             itemBuilder: (context, index) {
               final data = docs[index].data() as Map<String, dynamic>;
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  title: Text(data['title'] ?? 'Bez tytułu'),
-                  subtitle: Text(data['category'] ?? ''),
-                  trailing: Text('${data['price']} zł'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (_) => ListingDetailsPage(listingDoc: docs[index]),
-                      ),
-                    );
-                  },
-                ),
+
+              return ListTile(
+                leading: const Icon(Icons.chair, size: 30, color: Colors.blue),
+                title: Text(data['title'] ?? 'Bez tytułu'),
+                subtitle: Text(data['category'] ?? ''),
+                trailing: Text('${data['price']} zł'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ListingDetailsPage(listingDoc: docs[index]),
+                    ),
+                  );
+                },
               );
             },
           );
