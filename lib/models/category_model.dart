@@ -55,4 +55,16 @@ class CategoryModel {
       ),
     ];
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CategoryModel &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          iconPath == other.iconPath &&
+          boxColor == other.boxColor;
+
+  @override
+  int get hashCode => name.hashCode ^ iconPath.hashCode ^ boxColor.hashCode;
 }

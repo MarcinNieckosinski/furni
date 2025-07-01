@@ -1,60 +1,111 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:furniapp/pages/edit_listing.dart';
 import 'package:furniapp/pages/listing_details.dart';
 
-class UserListingsPage extends StatelessWidget {
+class UserListingsPage extends StatefulWidget {
   const UserListingsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Brak zalogowanego użytkownika')),
-      );
-    }
+  State<UserListingsPage> createState() => _UserListingsPageState();
+}
 
-    final listingsRef = FirebaseFirestore.instance
+class _UserListingsPageState extends State<UserListingsPage> {
+  late Future<QuerySnapshot> _listingsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _listingsFuture = FirebaseFirestore.instance
         .collection('listings')
-        .where('userId', isEqualTo: user.uid)
-        .orderBy('createdAt', descending: true);
+        .orderBy('createdAt', descending: true)
+        .get();
+  }
 
+  Future<String?> _getFirstImageUrl(String listingId) async {
+    try {
+      final imagesSnap = await FirebaseFirestore.instance
+          .collection('listings')
+          .doc(listingId)
+          .collection('images')
+          .orderBy('position')
+          .limit(1)
+          .get();
+
+      if (imagesSnap.docs.isNotEmpty) {
+        return imagesSnap.docs.first['url'] as String;
+      }
+    } catch (e) {
+      debugPrint('Błąd ładowania miniatury: $e');
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Twoje ogłoszenia'),
-        centerTitle: true,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: listingsRef.snapshots(),
+      appBar: AppBar(title: const Text('Moje ogłoszenia')),
+      body: FutureBuilder<QuerySnapshot>(
+        future: _listingsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Błąd: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('Nie masz jeszcze ogłoszeń'));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('Brak ogłoszeń.'));
           }
 
           final docs = snapshot.data!.docs;
 
-          return ListView.separated(
+          return ListView.builder(
             itemCount: docs.length,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            separatorBuilder: (_, __) => const Divider(height: 0),
             itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
+              final listing = docs[index];
+              final title = listing['title'] ?? '';
+              final price = listing['price'] ?? '';
+              final listingId = listing.id;
 
-              return ListTile(
-                leading: const Icon(Icons.chair, size: 30, color: Colors.blue),
-                title: Text(data['title'] ?? 'Bez tytułu'),
-                subtitle: Text(data['category'] ?? ''),
-                trailing: Text('${data['price']} zł'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ListingDetailsPage(listingDoc: docs[index]),
+              return FutureBuilder<String?>(
+                future: _getFirstImageUrl(listingId),
+                builder: (context, imgSnapshot) {
+                  final imageUrl = imgSnapshot.data;
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      leading: imageUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                imageUrl,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : const Icon(Icons.image_not_supported, size: 60),
+                      title: Text(title),
+                      subtitle: Text('Cena: $price PLN'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditListingPage(listingDoc: listing),
+                            ),
+                          );
+                        },
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ListingDetailsPage(listingDoc: listing),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },

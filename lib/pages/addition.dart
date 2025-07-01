@@ -1,14 +1,11 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:furniapp/models/category_model.dart';
 import 'package:furniapp/pages/home.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:permission_handler/permission_handler.dart';
 
 class AdditionPage extends StatefulWidget {
   const AdditionPage({super.key});
@@ -18,328 +15,245 @@ class AdditionPage extends StatefulWidget {
 }
 
 class _AdditionPageState extends State<AdditionPage> {
-  bool _isUploading = false;
+  final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final _descController = TextEditingController();
   final _priceController = TextEditingController();
-  final _categoryController = TextEditingController();
+  CategoryModel? _selectedCategory;
+  final ImagePicker _picker = ImagePicker();
+  final List<File> _selectedImages = [];
+  bool _isUploading = false;
 
-  List<File?> chosenImages = List.generate(8, (_) => null);
+  Future<void> _pickImage() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null && _selectedImages.length < 8) {
+      setState(() {
+        _selectedImages.add(File(picked.path));
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maksymalna liczba zdjęć to 8')),
+      );
+    }
+  }
+
+  Future<void> _saveListing() async {
+    if (!_formKey.currentState!.validate() || _selectedCategory == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception('Brak użytkownika');
+
+      final listingRef = await FirebaseFirestore.instance
+          .collection('listings')
+          .add({
+            'title': _titleController.text.trim(),
+            'description': _descController.text.trim(),
+            'price': _priceController.text.trim(),
+            'category': _selectedCategory!.name,
+            'userId': user.uid,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+      final listingId = listingRef.id;
+      final storage = FirebaseStorage.instance;
+      final imagesRef = listingRef.collection('images');
+
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final imageFile = _selectedImages[i];
+        final ref = storage.ref(
+          'listings/${_selectedCategory!.name}/$listingId/${listingId}_image_$i.jpg',
+        );
+        await ref.putFile(imageFile);
+        final url = await ref.getDownloadURL();
+
+        await imagesRef.add({
+          'url': url,
+          'position': i,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Ogłoszenie dodane!')));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      }
+    } catch (e) {
+      debugPrint('Błąd przy dodawaniu ogłoszenia: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Błąd podczas dodawania ogłoszenia')),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    Text(
-                      'Dodaj ogłoszenie',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    furnitureTitle(),
-                    const SizedBox(height: 20),
-                    categoriesDropdown(),
-                    const SizedBox(height: 20),
-                    furnitureDescription(),
-                    const SizedBox(height: 20),
-                    furniturePrice(),
-                    const SizedBox(height: 20),
-                    yourPhotosText(),
-                    const SizedBox(height: 20),
-                    yourPhotos(),
-                    const SizedBox(height: 20),
-                    addFurnitureButton(),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
-            ],
-          ),
-          if (_isUploading)
-            Container(
-              color: Colors.black.withValues(alpha: .5),
-              child: Center(
-                child: CircularProgressIndicator(color: Colors.white),
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(title: const Text('Dodaj ogłoszenie')),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: 'Tytuł'),
+                    validator:
+                        (val) =>
+                            val == null || val.trim().isEmpty
+                                ? 'Podaj tytuł'
+                                : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _descController,
+                    maxLines: 5,
+                    decoration: const InputDecoration(labelText: 'Opis'),
+                    validator:
+                        (val) =>
+                            val == null || val.trim().isEmpty
+                                ? 'Podaj opis'
+                                : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Cena'),
+                    validator:
+                        (val) =>
+                            val == null || val.trim().isEmpty
+                                ? 'Podaj cenę'
+                                : null,
+                  ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<CategoryModel>(
+                    value: _selectedCategory,
+                    items:
+                        CategoryModel.getCategories()
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat,
+                                child: Text(cat.name),
+                              ),
+                            )
+                            .toList(),
+                    onChanged: (val) => setState(() => _selectedCategory = val),
+                    decoration: const InputDecoration(labelText: 'Kategoria'),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Zdjęcia (max 8)',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (int i = 0; i < _selectedImages.length; i++)
+                        Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () async {
+                                final picked = await _picker.pickImage(
+                                  source: ImageSource.gallery,
+                                );
+                                if (picked != null) {
+                                  setState(
+                                    () =>
+                                        _selectedImages[i] = File(picked.path),
+                                  );
+                                }
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  _selectedImages[i],
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap:
+                                    () => setState(
+                                      () => _selectedImages.removeAt(i),
+                                    ),
+                                child: const CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: Colors.black54,
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (_selectedImages.length < 8)
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.add_a_photo,
+                              size: 32,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    onPressed: _saveListing,
+                    child: const Text('Dodaj ogłoszenie'),
+                  ),
+                ],
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  DropdownMenu categoriesDropdown() {
-    return DropdownMenu<CategoryModel>(
-      initialSelection: CategoryModel.getCategories()[0],
-      dropdownMenuEntries:
-          CategoryModel.getCategories()
-              .map(
-                (category) =>
-                    DropdownMenuEntry(label: category.name, value: category),
-              )
-              .toList(),
-      onSelected: (value) {
-        debugPrint(value.toString());
-      },
-      width: 320,
-      hintText: 'Wybierz kategorię',
-      controller: _categoryController,
-    );
-  }
-
-  OutlinedButton addFurnitureButton() {
-    return OutlinedButton(
-      onPressed: () {
-        _addListing(
-          FirebaseAuth.instance.currentUser!.uid,
-          _titleController.text,
-          _descriptionController.text,
-          _priceController.text,
-          _categoryController.text,
-        );
-      },
-      style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        side: BorderSide(color: Colors.black.withValues(alpha: 0.3), width: 1),
-        fixedSize: Size(320, 70),
-      ),
-      child: Text('Dodaj ogłoszenie', style: TextStyle(fontSize: 20)),
-    );
-  }
-
-  SizedBox furniturePrice() {
-    return SizedBox(
-      width: 320,
-      child: TextField(
-        controller: _priceController,
-        decoration: InputDecoration(
-          labelText: 'Cena',
-          border: OutlineInputBorder(),
-        ),
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(10),
-        ],
-        keyboardType: TextInputType.number,
-      ),
-    );
-  }
-
-  SizedBox furnitureTitle() {
-    return SizedBox(
-      width: 320,
-      child: TextField(
-        controller: _titleController,
-        decoration: InputDecoration(
-          labelText: 'Tytuł ogłoszenia (max. 30 znaków)',
-          border: OutlineInputBorder(),
-        ),
-        inputFormatters: [LengthLimitingTextInputFormatter(30)],
-      ),
-    );
-  }
-
-  SizedBox furnitureDescription() {
-    return SizedBox(
-      width: 320,
-      child: TextField(
-        controller: _descriptionController,
-        decoration: InputDecoration(
-          labelText: 'Opis ogłoszenia \n\n(max. 3000 znaków)',
-          border: OutlineInputBorder(),
-        ),
-        maxLines: 5,
-        inputFormatters: [LengthLimitingTextInputFormatter(3000)],
-      ),
-    );
-  }
-
-  GridView yourPhotos() {
-    return GridView.builder(
-      itemCount: 8,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 5,
-        mainAxisSpacing: 5,
-      ),
-      shrinkWrap: true,
-      itemBuilder: (context, index) {
-        final image = chosenImages[index];
-        return GestureDetector(
-          onTap:
-              () async => {
-                if (image == null)
-                  {await requestStoragePermission(), _pickImageForIndex(index)}
-                else
-                  {
-                    setState(() {
-                      chosenImages[index] = null; // Remove the image
-                    }),
-                  },
-              },
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.black.withValues(alpha: 0.3),
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.white,
-            ),
-            child:
-                image != null
-                    ? Image.file(image, fit: BoxFit.cover)
-                    : Icon(
-                      Icons.add_a_photo_rounded,
-                      color: Colors.black.withValues(alpha: 0.5),
-                      size: 50,
-                    ),
           ),
-        );
-      },
+        ),
+        if (_isUploading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black45,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+      ],
     );
   }
 
-  void _pickImageForIndex(int index) async {
-    final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-    if (pickedFile != null) {
-      setState(() {
-        chosenImages[index] = File(pickedFile.path);
-      });
-    } else {
-      Fluttertoast.showToast(
-        msg: 'Nie wybrano zdjęcia',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    }
-  }
-
-  Text yourPhotosText() {
-    return Text(
-      'Twoje zdjęcia',
-      style: TextStyle(
-        color: Colors.black.withValues(alpha: 0.5),
-        fontSize: 20,
-      ),
-    );
-  }
-
-  Future<void> _addListing(
-    String userId,
-    String title,
-    String description,
-    String price,
-    String category,
-  ) async {
-    try {
-      if (title.isEmpty ||
-          description.isEmpty ||
-          price.isEmpty ||
-          category.isEmpty) {
-        Fluttertoast.showToast(
-          msg: 'Wszystkie pola są wymagane!',
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-        return;
-      }
-      if (double.tryParse(price) == null) {
-        Fluttertoast.showToast(
-          msg: 'Cena musi być liczbą!',
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-        return;
-      }
-
-      setState(() {
-        _isUploading = true;
-      });
-
-      await FirebaseFirestore.instance
-          .collection('listings')
-          .add({
-            'userId': userId,
-            'title': title,
-            'description': description,
-            'price': price,
-            'category': category,
-            'createdAt': FieldValue.serverTimestamp(),
-          })
-          .then((DocumentReference docRef) async {
-            final listingId = docRef.id;
-
-            for (int i = 0; i < chosenImages.length; i++) {
-              if (chosenImages[i] != null) {
-                final imageFile = chosenImages[i]!;
-                final fileName = '${listingId}_image_$i.jpg';
-                debugPrint(fileName);
-                final storageRef = FirebaseStorage.instance.ref().child(
-                  'listings/$category/$listingId/$fileName',
-                );
-                await storageRef.putFile(imageFile);
-                debugPrint('Image uploaded: $fileName');
-                final imageUrl = await storageRef.getDownloadURL();
-                await docRef.collection('images').add({'url': imageUrl});
-              }
-            }
-          });
-
-      setState(() {
-        _isUploading = false;
-      });
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
-      Fluttertoast.showToast(
-        msg: 'Ogłoszenie dodane pomyślnie!',
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-      debugPrint('Listing added successfully');
-    } catch (e) {
-      debugPrint('Error adding listing: $e');
-    }
-  }
-
-  Future<void> requestStoragePermission() async {
-    final status =
-        await Permission.photos
-            .request(); // lub Permission.storage dla starszych wersji
-
-    if (status.isGranted) {
-      print('✅ Uprawnienie przyznane');
-    } else if (status.isDenied) {
-      print('❌ Uprawnienie odrzucone');
-    } else if (status.isPermanentlyDenied) {
-      openAppSettings(); // otwiera ustawienia aplikacji
-    }
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    _priceController.dispose();
+    super.dispose();
   }
 }
