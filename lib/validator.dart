@@ -1,4 +1,40 @@
 class Validator {
+  static String? validateCity({required String? city}) {
+    final regex = RegExp(r"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s\-']+$");
+
+    if (city == null || city.trim().isEmpty) {
+      return 'Podaj miejscowość';
+    } else if (city.length < 2) {
+      return 'Nazwa jest za krótka';
+    } else if (!regex.hasMatch(city.trim())) {
+      return 'Niepoprawne znaki w nazwie miejscowości';
+    }
+    return null;
+  }
+
+  static String? validatePhone({required String? phone}) {
+    final clean = phone?.replaceAll(RegExp(r'\s|-'), '');
+    final regex = RegExp(r'^[+]?[0-9]{9,15}$');
+
+    if (clean == null || clean.isEmpty) {
+      return 'Podaj numer telefonu';
+    } else if (!regex.hasMatch(clean)) {
+      return 'Nieprawidłowy numer telefonu';
+    }
+    return null;
+  }
+
+  static String? validatePostalCode({required String? code}) {
+    final regex = RegExp(r'^\d{2}-\d{3}$');
+
+    if (code == null || code.trim().isEmpty) {
+      return 'Podaj kod pocztowy';
+    } else if (!regex.hasMatch(code.trim())) {
+      return 'Kod pocztowy powinien mieć format XX-XXX';
+    }
+    return null;
+  }
+
   static String? validateLogin({required String? login}) {
     if (login == null) {
       return null;

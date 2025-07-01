@@ -9,6 +9,7 @@ class LatestModel {
   String price;
   String city;
   String date;
+  String id;
 
   LatestModel({
     required this.name,
@@ -17,6 +18,7 @@ class LatestModel {
     required this.price,
     required this.city,
     required this.date,
+    required this.id,
   });
 }
 
@@ -53,6 +55,7 @@ Future<List<LatestModel>> fetchLatest(String category) async {
         price: data['price'] != null ? '${data['price']} PLN' : 'Price not available',
         city: data['city'] ?? 'Unknown City',
         date: (data['createdAt'] as Timestamp).toDate().toString().split(' ')[0], // Format date
+        id: listingId,
       ));
     }
 

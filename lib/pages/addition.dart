@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -99,7 +100,7 @@ class _AdditionPageState extends State<AdditionPage> {
     return OutlinedButton(
       onPressed: () {
         _addListing(
-          'userId',
+          FirebaseAuth.instance.currentUser!.uid,
           _titleController.text,
           _descriptionController.text,
           _priceController.text,

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:furniapp/components/appbar.dart';
 import 'package:furniapp/components/categories.dart';
@@ -8,6 +10,7 @@ import 'package:furniapp/models/latest_sections_model.dart';
 import 'package:furniapp/pages/addition.dart';
 import 'package:furniapp/pages/login.dart';
 import 'package:furniapp/pages/register.dart';
+import 'package:furniapp/pages/user_listings.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,33 +22,37 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<CategoryModel> categories = [];
   Future<List<LatestSectionsModel>> latest = Future.value([]);
+  User? currentUser;
+  String loginName = 'Gość';
 
+  @override
   void initState() {
     super.initState();
-    _getInitialInfo();
-  }
-
-  void _getCategories() {
     categories = CategoryModel.getCategories();
-  }
-
-  void _getLatestSections() {
     latest = LatestSectionsModel.getLatestSections();
+    currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser != null) {
+      _fetchLoginName(currentUser!.uid);
+    }
   }
 
-  void _getInitialInfo() {
-    _getCategories();
-    _getLatestSections();
+  Future<void> _fetchLoginName(String uid) async {
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (doc.exists) {
+      setState(() {
+        loginName = doc.data()?['login'] ?? 'Gość';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    _getInitialInfo();
-
     return Scaffold(
       appBar: appBar(),
       backgroundColor: Colors.white,
-      drawer: drawer(),
+      drawer: _buildDrawer(),
       body: FutureBuilder<List<LatestSectionsModel>>(
         future: latest,
         builder: (context, snapshot) {
@@ -54,17 +61,18 @@ class _HomePageState extends State<HomePage> {
           } else if (snapshot.hasError) {
             return Center(child: Text('❌ Błąd: ${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('Brak ogłoszeń.'));
+            return const Center(child: Text('Brak ogłoszeń.'));
           } else {
             final sections = snapshot.data!;
             return ListView(
+              padding: const EdgeInsets.only(bottom: 30),
               children: [
                 searchField(),
                 const SizedBox(height: 40),
                 categoriesSection(categories),
                 const SizedBox(height: 40),
                 for (var section in sections) latestSection(section),
-                const Center(child: Text('Furni \u00a9 by MINT')),
+                const Center(child: Text('Furni © by MINT')),
               ],
             );
           }
@@ -73,66 +81,103 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Drawer drawer() {
+  Drawer _buildDrawer() {
+    final isLoggedIn = currentUser != null;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.7),
-            ),
-            child: Column(
-              children: [
-                Image(
-                  image: AssetImage('assets/images/Portrait_Placeholder.png'),
-                  height: 80,
-                ),
-                Text(
-                  'Gościnny Gość',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            title: Center(child: Text('Strona główna')),
-            onTap: () {
+          _drawerHeader(),
+          _drawerItem('Strona główna', () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomePage()),
+            );
+          }),
+          if (!isLoggedIn)
+            _drawerItem('Zaloguj się', () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => HomePage()),
+                MaterialPageRoute(builder: (_) => const LoginPage()),
               );
-            },
-          ),
-          ListTile(
-            title: Center(child: Text('Zaloguj się')),
-            onTap: () {
+            }),
+          if (!isLoggedIn)
+            _drawerItem('Zarejestruj się', () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => LoginPage()),
+                MaterialPageRoute(builder: (_) => const RegisterPage()),
               );
-            },
-          ),
-          ListTile(
-            title: Center(child: Text('Zarejestruj się')),
-            onTap: () {
+            }),
+          if (isLoggedIn)
+            _drawerItem('Twoje ogłoszenia', () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => RegisterPage()),
+                MaterialPageRoute(builder: (_) => const UserListingsPage()),
               );
-            },
-          ),
-          ListTile(
-            title: Center(child: Text('Dodaj ogłoszenie')),
-            onTap: () {
+            }),
+          if (isLoggedIn)
+            _drawerItem('Dodaj ogłoszenie', () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AdditionPage()),
+                MaterialPageRoute(builder: (_) => const AdditionPage()),
               );
-            },
+            }),
+          if (isLoggedIn) _drawerItem('Wyloguj', _handleLogout),
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerHeader() {
+    return DrawerHeader(
+      decoration: BoxDecoration(color: Colors.blue.withOpacity(0.7)),
+      child: Column(
+        children: [
+          const Image(
+            image: AssetImage('assets/images/Portrait_Placeholder.png'),
+            height: 80,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            loginName,
+            style: const TextStyle(color: Colors.white, fontSize: 24),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Czy na pewno chcesz się wylogować?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Anuluj'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Wyloguj'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    }
+  }
+
+  Widget _drawerItem(String title, VoidCallback onTap) {
+    return ListTile(title: Center(child: Text(title)), onTap: onTap);
   }
 }
