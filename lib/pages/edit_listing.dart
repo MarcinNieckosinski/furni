@@ -159,171 +159,173 @@ class _EditListingPageState extends State<EditListingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          appBar: AppBar(title: const Text('Edytuj ogłoszenie')),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(labelText: 'Tytuł'),
-                    validator:
-                        (val) =>
-                            val == null || val.trim().isEmpty
-                                ? 'Podaj tytuł'
-                                : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _descController,
-                    maxLines: 5,
-                    decoration: const InputDecoration(labelText: 'Opis'),
-                    validator:
-                        (val) =>
-                            val == null || val.trim().isEmpty
-                                ? 'Podaj opis'
-                                : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Cena'),
-                    validator:
-                        (val) =>
-                            val == null || val.trim().isEmpty
-                                ? 'Podaj cenę'
-                                : null,
-                  ),
-                  const SizedBox(height: 20),
-                  DropdownButtonFormField<CategoryModel>(
-                    value: _selectedCategory,
-                    items:
-                        CategoryModel.getCategories()
-                            .map(
-                              (cat) => DropdownMenuItem(
-                                value: cat,
-                                child: Text(cat.name),
-                              ),
-                            )
-                            .toList(),
-                    onChanged:
-                        (value) => setState(() => _selectedCategory = value),
-                    decoration: const InputDecoration(labelText: 'Kategoria'),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Zdjęcia ogłoszenia',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      for (int i = 0; i < existingImages.length; i++)
-                        Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () => _replaceImageAt(i, isExisting: true),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  existingImages[i],
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
+    return SafeArea(
+      child: Stack(
+        children: [
+          Scaffold(
+            appBar: AppBar(title: const Text('Edytuj ogłoszenie')),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(labelText: 'Tytuł'),
+                      validator:
+                          (val) =>
+                              val == null || val.trim().isEmpty
+                                  ? 'Podaj tytuł'
+                                  : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _descController,
+                      maxLines: 5,
+                      decoration: const InputDecoration(labelText: 'Opis'),
+                      validator:
+                          (val) =>
+                              val == null || val.trim().isEmpty
+                                  ? 'Podaj opis'
+                                  : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Cena'),
+                      validator:
+                          (val) =>
+                              val == null || val.trim().isEmpty
+                                  ? 'Podaj cenę'
+                                  : null,
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownButtonFormField<CategoryModel>(
+                      value: _selectedCategory,
+                      items:
+                          CategoryModel.getCategories()
+                              .map(
+                                (cat) => DropdownMenuItem(
+                                  value: cat,
+                                  child: Text(cat.name),
                                 ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap:
-                                    () => setState(() {
-                                      imagesToRemove.add(existingImages[i]);
-                                      existingImages.removeAt(i);
-                                    }),
-                                child: const CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: Colors.black54,
-                                  child: Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: Colors.white,
+                              )
+                              .toList(),
+                      onChanged:
+                          (value) => setState(() => _selectedCategory = value),
+                      decoration: const InputDecoration(labelText: 'Kategoria'),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Zdjęcia ogłoszenia',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (int i = 0; i < existingImages.length; i++)
+                          Stack(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _replaceImageAt(i, isExisting: true),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    existingImages[i],
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      for (int i = 0; i < newImages.length; i++)
-                        GestureDetector(
-                          onTap: () => _replaceImageAt(i, isExisting: false),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              newImages[i],
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      GestureDetector(
-                        onTap: () {
-                          final total =
-                              existingImages.length + newImages.length;
-                          if (total < 8) {
-                            _pickNewImage();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Maksymalna liczba zdjęć to 8'),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap:
+                                      () => setState(() {
+                                        imagesToRemove.add(existingImages[i]);
+                                        existingImages.removeAt(i);
+                                      }),
+                                  child: const CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: Colors.black54,
+                                    child: Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            );
-                          }
-                        },
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
+                            ],
                           ),
-                          child: const Icon(
-                            Icons.add_a_photo,
-                            size: 32,
-                            color: Colors.grey,
+                        for (int i = 0; i < newImages.length; i++)
+                          GestureDetector(
+                            onTap: () => _replaceImageAt(i, isExisting: false),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                newImages[i],
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        GestureDetector(
+                          onTap: () {
+                            final total =
+                                existingImages.length + newImages.length;
+                            if (total < 8) {
+                              _pickNewImage();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Maksymalna liczba zdjęć to 8'),
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.add_a_photo,
+                              size: 32,
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: _saveChanges,
-                    child: const Text('Zapisz zmiany'),
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+                    ElevatedButton(
+                      onPressed: _saveChanges,
+                      child: const Text('Zapisz zmiany'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        if (_isSaving)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black45,
-              child: const Center(child: CircularProgressIndicator()),
+          if (_isSaving)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black45,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

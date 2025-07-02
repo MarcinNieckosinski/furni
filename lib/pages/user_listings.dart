@@ -127,94 +127,96 @@ class _UserListingsPageState extends State<UserListingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Twoje ogłoszenia')),
-      body: FutureBuilder<QuerySnapshot>(
-        future: _listingsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text('Nie masz jeszcze żadnych ogłoszeń.'),
-            );
-          }
-
-          final docs = snapshot.data!.docs;
-
-          return ListView.builder(
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final listing = docs[index];
-              final listingId = listing.id;
-              final title = listing['title'] ?? '';
-              final price = listing['price'] ?? '';
-
-              return FutureBuilder<String?>(
-                future: _getFirstImageUrl(listingId),
-                builder: (context, imgSnapshot) {
-                  final imageUrl = imgSnapshot.data;
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: ListTile(
-                      leading:
-                          imageUrl != null
-                              ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  imageUrl,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                              : const Icon(Icons.image_not_supported, size: 60),
-                      title: Text(title),
-                      subtitle: Text('Cena: $price PLN'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) =>
-                                          EditListingPage(listingDoc: listing),
-                                ),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _confirmDelete(listing),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => ListingDetailsPage(listingDoc: listing),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Twoje ogłoszenia')),
+        body: FutureBuilder<QuerySnapshot>(
+          future: _listingsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+      
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Center(
+                child: Text('Nie masz jeszcze żadnych ogłoszeń.'),
               );
-            },
-          );
-        },
+            }
+      
+            final docs = snapshot.data!.docs;
+      
+            return ListView.builder(
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final listing = docs[index];
+                final listingId = listing.id;
+                final title = listing['title'] ?? '';
+                final price = listing['price'] ?? '';
+      
+                return FutureBuilder<String?>(
+                  future: _getFirstImageUrl(listingId),
+                  builder: (context, imgSnapshot) {
+                    final imageUrl = imgSnapshot.data;
+      
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: ListTile(
+                        leading:
+                            imageUrl != null
+                                ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    imageUrl,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                                : const Icon(Icons.image_not_supported, size: 60),
+                        title: Text(title),
+                        subtitle: Text('Cena: $price PLN'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) =>
+                                            EditListingPage(listingDoc: listing),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _confirmDelete(listing),
+                            ),
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => ListingDetailsPage(listingDoc: listing),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

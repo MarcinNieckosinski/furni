@@ -126,114 +126,116 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                const Text(
-                  'Zarejestruj się',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Utwórz konto w Furni',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-                const SizedBox(height: 30),
-
-                _buildTextField(
-                  label: 'Kod pocztowy',
-                  controller: _postalCodeController,
-                  validator: (val) => Validator.validatePostalCode(code: val),
-                  inputFormatters: [postalCodeFormatter],
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-
-                _buildTextField(
-                  label: 'Miejscowość',
-                  controller: _cityController,
-                  validator: (val) => Validator.validateCity(city: val),
-                ),
-                const SizedBox(height: 12),
-
-                _buildTextField(
-                  label: 'Telefon',
-                  controller: _phoneController,
-                  validator: (val) => Validator.validatePhone(phone: val),
-                  inputFormatters: [phoneFormatter],
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 12),
-
-                _buildTextField(
-                  label: 'Email',
-                  controller: _emailController,
-                  validator: (val) => Validator.validateEmail(email: val),
-                ),
-                const SizedBox(height: 12),
-
-                _buildTextField(
-                  label: 'Login',
-                  controller: _loginController,
-                  validator: (val) => Validator.validateLogin(login: val),
-                ),
-                const SizedBox(height: 12),
-
-                _buildTextField(
-                  label: 'Hasło',
-                  controller: _passwordController,
-                  isObscure: true,
-                  validator: (val) => Validator.validatePassword(password: val),
-                ),
-                const SizedBox(height: 12),
-
-                _buildTextField(
-                  label: 'Powtórz hasło',
-                  controller: _repeatPasswordController,
-                  isObscure: true,
-                  validator:
-                      (val) => Validator.validatePasswordRepeat(
-                        password: _passwordController.text,
-                        repeatPassword: val,
-                      ),
-                ),
-                const SizedBox(height: 24),
-
-                _isLoading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                      onPressed: _register,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                      ),
-                      child: const Text('Zarejestruj'),
-                    ),
-                const SizedBox(height: 10),
-
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Powrót'),
-                ),
-                const SizedBox(height: 10),
-
-                TextButton(
-                  onPressed:
-                      () => Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const HomePage()),
-                      ),
-                  child: const Text(
-                    'Na stronę główną',
-                    style: TextStyle(fontSize: 16),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  const Text(
+                    'Zarejestruj się',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Utwórz konto w Furni',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 30),
+      
+                  _buildTextField(
+                    label: 'Kod pocztowy',
+                    controller: _postalCodeController,
+                    validator: (val) => Validator.validatePostalCode(code: val),
+                    inputFormatters: [postalCodeFormatter],
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+      
+                  _buildTextField(
+                    label: 'Miejscowość',
+                    controller: _cityController,
+                    validator: (val) => Validator.validateCity(city: val),
+                  ),
+                  const SizedBox(height: 12),
+      
+                  _buildTextField(
+                    label: 'Telefon',
+                    controller: _phoneController,
+                    validator: (val) => Validator.validatePhone(phone: val),
+                    inputFormatters: [phoneFormatter],
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 12),
+      
+                  _buildTextField(
+                    label: 'Email',
+                    controller: _emailController,
+                    validator: (val) => Validator.validateEmail(email: val),
+                  ),
+                  const SizedBox(height: 12),
+      
+                  _buildTextField(
+                    label: 'Login',
+                    controller: _loginController,
+                    validator: (val) => Validator.validateLogin(login: val),
+                  ),
+                  const SizedBox(height: 12),
+      
+                  _buildTextField(
+                    label: 'Hasło',
+                    controller: _passwordController,
+                    isObscure: true,
+                    validator: (val) => Validator.validatePassword(password: val),
+                  ),
+                  const SizedBox(height: 12),
+      
+                  _buildTextField(
+                    label: 'Powtórz hasło',
+                    controller: _repeatPasswordController,
+                    isObscure: true,
+                    validator:
+                        (val) => Validator.validatePasswordRepeat(
+                          password: _passwordController.text,
+                          repeatPassword: val,
+                        ),
+                  ),
+                  const SizedBox(height: 24),
+      
+                  _isLoading
+                      ? const CircularProgressIndicator()
+                      : ElevatedButton(
+                        onPressed: _register,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                        ),
+                        child: const Text('Zarejestruj'),
+                      ),
+                  const SizedBox(height: 10),
+      
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Powrót'),
+                  ),
+                  const SizedBox(height: 10),
+      
+                  TextButton(
+                    onPressed:
+                        () => Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HomePage()),
+                        ),
+                    child: const Text(
+                      'Na stronę główną',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

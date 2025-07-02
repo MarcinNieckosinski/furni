@@ -28,35 +28,37 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: ListView(
-        padding: const EdgeInsets.only(top: 100),
-        children: [
-          Column(
-            children: [
-              _logoImage(),
-              _welcomeText(),
-              _loginSubtext(),
-              const SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _loginTextfield(),
-                    const SizedBox(height: 10),
-                    _passwordTextfield(),
-                  ],
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: ListView(
+          padding: const EdgeInsets.only(top: 100),
+          children: [
+            Column(
+              children: [
+                _logoImage(),
+                _welcomeText(),
+                _loginSubtext(),
+                const SizedBox(height: 20),
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      _loginTextfield(),
+                      const SizedBox(height: 10),
+                      _passwordTextfield(),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              _loginButton(),
-              const SizedBox(height: 20),
-              _registerSubtext(),
-              _toMainPageSubtext(),
-            ],
-          ),
-        ],
+                const SizedBox(height: 10),
+                _loginButton(),
+                const SizedBox(height: 20),
+                _registerSubtext(),
+                _toMainPageSubtext(),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
