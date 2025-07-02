@@ -21,6 +21,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _showFilters = false;
+  String? _selectedCity;
+  String? _selectedCategory;
+  RangeValues _priceRange = const RangeValues(0, 10000);
   final TextEditingController _searchController = TextEditingController();
   List<CategoryModel> categories = CategoryModel.getCategories();
   Future<List<LatestSectionsModel>> latestSectionsFuture =
@@ -57,14 +61,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _performSearch(String query) async {
-    if (query.isEmpty) {
-      setState(() => _searchResults = []);
-      return;
-    }
-
     final words =
-        query.split(RegExp(r'\s+')).where((w) => w.length > 1).toList();
-    if (words.isEmpty) {
+        query
+            .trim()
+            .toLowerCase()
+            .split(RegExp(r'\s+'))
+            .where((w) => w.isNotEmpty)
+            .toList();
+
+    final hasFilters =
+        _selectedCity != null ||
+        _selectedCategory != null ||
+        _priceRange != const RangeValues(0, 10000);
+
+    if (words.isEmpty && !hasFilters) {
       setState(() => _searchResults = []);
       return;
     }
@@ -72,23 +82,63 @@ class _HomePageState extends State<HomePage> {
     setState(() => _isSearching = true);
     final allDocs = <DocumentSnapshot>[];
 
-    for (final word in words) {
-      final snap =
-          await FirebaseFirestore.instance
-              .collection('listings')
-              .where('keywords', arrayContains: word)
-              .orderBy('createdAt', descending: true)
-              .limit(20)
-              .get();
-      allDocs.addAll(snap.docs);
+    try {
+      if (words.isEmpty) {
+        // 🔍 Brak frazy — pobierz najnowsze ogłoszenia i przefiltruj lokalnie
+        final snap =
+            await FirebaseFirestore.instance
+                .collection('listings')
+                .orderBy('createdAt', descending: true)
+                .limit(50)
+                .get();
+
+        allDocs.addAll(snap.docs.where(_filterDoc));
+      } else {
+        // 🔍 Szukaj według słów kluczowych + filtruj lokalnie
+        for (final word in words) {
+          final snap =
+              await FirebaseFirestore.instance
+                  .collection('listings')
+                  .where('keywords', arrayContains: word)
+                  .orderBy('createdAt', descending: true)
+                  .limit(20)
+                  .get();
+
+          allDocs.addAll(snap.docs.where(_filterDoc));
+        }
+      }
+
+      final unique = {for (var doc in allDocs) doc.id: doc}.values.toList();
+
+      setState(() {
+        _searchResults = unique;
+        _isSearching = false;
+      });
+    } catch (e) {
+      debugPrint('Błąd wyszukiwania: $e');
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+    }
+  }
+
+  bool _filterDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final cityMatch = _selectedCity == null || data['city'] == _selectedCity;
+    final categoryMatch =
+        _selectedCategory == null || data['category'] == _selectedCategory;
+    final rawPrice = data['price'];
+    double price = 0.0;
+
+    if (rawPrice is num) {
+      price = rawPrice.toDouble();
+    } else if (rawPrice is String) {
+      price = double.tryParse(rawPrice.replaceAll(',', '.')) ?? 0.0;
     }
 
-    final unique = {for (final doc in allDocs) doc.id: doc}.values.toList();
-
-    setState(() {
-      _searchResults = unique;
-      _isSearching = false;
-    });
+    final priceMatch = price >= _priceRange.start && price <= _priceRange.end;
+    return cityMatch && categoryMatch && priceMatch;
   }
 
   @override
@@ -98,9 +148,34 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  Widget _buildDropdown<T>({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+  }) {
+    return DropdownButton<String>(
+      hint: Text(label),
+      value: value,
+      items:
+          items
+              .map(
+                (item) =>
+                    DropdownMenuItem<String>(value: item, child: Text(item)),
+              )
+              .toList(),
+      onChanged: onChanged,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isSearching = _searchController.text.isNotEmpty;
+    final hasQuery = _searchController.text.trim().isNotEmpty;
+    final hasFilters =
+        _selectedCity != null ||
+        _selectedCategory != null ||
+        _priceRange != const RangeValues(0, 10000);
+    final hasActiveSearch = hasQuery || hasFilters;
 
     return Scaffold(
       appBar: appBar(),
@@ -111,7 +186,95 @@ class _HomePageState extends State<HomePage> {
         children: [
           SearchField(controller: _searchController, onChanged: (_) {}),
           const SizedBox(height: 10),
-          if (isSearching)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _showFilters = !_showFilters),
+              icon: Icon(
+                _showFilters ? Icons.filter_alt_off : Icons.filter_alt,
+              ),
+              label: Text(_showFilters ? 'Ukryj filtry' : 'Pokaż filtry'),
+            ),
+          ),
+          if (_showFilters)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Filtry',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _buildDropdown<String>(
+                        label: 'Miasto',
+                        value: _selectedCity,
+                        items: [
+                          'Warszawa',
+                          'Kraków',
+                          'Poznań',
+                          'Gdańsk',
+                          'Lublin',
+                        ],
+                        onChanged: (val) => setState(() => _selectedCity = val),
+                      ),
+                      _buildDropdown<String>(
+                        label: 'Kategoria',
+                        value: _selectedCategory,
+                        items: categories.map((c) => c.name).toList(),
+                        onChanged: (val) => _selectedCategory = val,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  const Text('Cena'),
+                  RangeSlider(
+                    values: _priceRange,
+                    min: 0,
+                    max: 10000,
+                    divisions: 20,
+                    labels: RangeLabels(
+                      '${_priceRange.start.toInt()} zł',
+                      '${_priceRange.end.toInt()} zł',
+                    ),
+                    onChanged: (range) => setState(() => _priceRange = range),
+                  ),
+                  const SizedBox(height: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _selectedCity = null;
+                            _selectedCategory = null;
+                            _priceRange = const RangeValues(0, 10000);
+                          });
+                        },
+                        icon: const Icon(Icons.clear),
+                        label: const Text('Wyczyść filtry'),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          FocusScope.of(context).unfocus();
+                          _performSearch(_searchController.text.trim());
+                        },
+                        icon: const Icon(Icons.filter_alt),
+                        label: const Text('Zastosuj filtry'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 10),
+          if (hasActiveSearch)
             _isSearching
                 ? const Center(child: CircularProgressIndicator())
                 : _searchResults.isEmpty
