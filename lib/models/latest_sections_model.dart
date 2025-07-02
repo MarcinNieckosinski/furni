@@ -5,6 +5,7 @@ class LatestSectionsModel {
   final Color color;
   final String name;
   final List<LatestModel> latest;
+  bool get hasListings => latest.isNotEmpty;
 
   LatestSectionsModel({
     required this.color,
@@ -26,7 +27,7 @@ class LatestSectionsModel {
       );
     }));
 
-    return latestSections;
+    return latestSections.where((s) => s.hasListings).toList();
   }
 
   static List<String> _getCategoryList() => const [

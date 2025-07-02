@@ -135,7 +135,8 @@ class _HomePageState extends State<HomePage> {
     final cityInput = _cityController.text.trim().toLowerCase();
     final cityMatch =
         cityInput.isEmpty ||
-        (data['userCity']?.toString().toLowerCase().contains(cityInput) ?? false);
+        (data['userCity']?.toString().toLowerCase().contains(cityInput) ??
+            false);
 
     final categoryMatch =
         _selectedCategory == null || data['category'] == _selectedCategory;
@@ -180,6 +181,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _handleRefresh() async {
+    FocusScope.of(context).unfocus();
+
+    // Odśwież dane na podstawie aktualnej frazy i filtrów
+    final query = _searchController.text.trim();
+    await _performSearch(query);
+
+    // Możesz też dodać logikę do odświeżania kategorii/sekcji:
+    latestSectionsFuture = LatestSectionsModel.getLatestSections();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasQuery = _searchController.text.trim().isNotEmpty;
@@ -193,165 +206,172 @@ class _HomePageState extends State<HomePage> {
       appBar: appBar(),
       backgroundColor: Colors.white,
       drawer: _buildDrawer(),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 30),
-        children: [
-          SearchField(controller: _searchController, onChanged: (_) {}),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => setState(() => _showFilters = !_showFilters),
-              icon: Icon(
-                _showFilters ? Icons.filter_alt_off : Icons.filter_alt,
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 30),
+          children: [
+            SearchField(controller: _searchController, onChanged: (_) {}),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _showFilters = !_showFilters),
+                icon: Icon(
+                  _showFilters ? Icons.filter_alt_off : Icons.filter_alt,
+                ),
+                label: Text(_showFilters ? 'Ukryj filtry' : 'Pokaż filtry'),
               ),
-              label: Text(_showFilters ? 'Ukryj filtry' : 'Pokaż filtry'),
             ),
-          ),
-          if (_showFilters)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Filtry',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      SizedBox(
-                        width: 200,
-                        child: TextField(
-                          controller: _cityController,
-                          decoration: const InputDecoration(
-                            labelText: 'Miasto',
-                            border: OutlineInputBorder(),
+            if (_showFilters)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Filtry',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        SizedBox(
+                          width: 200,
+                          child: TextField(
+                            controller: _cityController,
+                            decoration: const InputDecoration(
+                              labelText: 'Miasto',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
-                      ),
 
-                      _buildDropdown<String>(
-                        label: 'Kategoria',
-                        value: _selectedCategory,
-                        items: categories.map((c) => c.name).toList(),
-                        onChanged: (val) => _selectedCategory = val,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                  const Text('Cena'),
-                  RangeSlider(
-                    values: _priceRange,
-                    min: 0,
-                    max: 10000,
-                    divisions: 20,
-                    labels: RangeLabels(
-                      '${_priceRange.start.toInt()} zł',
-                      '${_priceRange.end.toInt()} zł',
+                        _buildDropdown<String>(
+                          label: 'Kategoria',
+                          value: _selectedCategory,
+                          items: categories.map((c) => c.name).toList(),
+                          onChanged: (val) => _selectedCategory = val,
+                        ),
+                      ],
                     ),
-                    onChanged: (range) => setState(() => _priceRange = range),
-                  ),
-                  const SizedBox(height: 15),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _selectedCity = null;
-                            _selectedCategory = null;
-                            _priceRange = const RangeValues(0, 10000);
-                            _cityController.clear();
-                          });
-                        },
-                        icon: const Icon(Icons.clear),
-                        label: const Text('Wyczyść filtry'),
+                    const SizedBox(height: 15),
+                    const Text('Cena'),
+                    RangeSlider(
+                      values: _priceRange,
+                      min: 0,
+                      max: 10000,
+                      divisions: 20,
+                      labels: RangeLabels(
+                        '${_priceRange.start.toInt()} zł',
+                        '${_priceRange.end.toInt()} zł',
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          FocusScope.of(context).unfocus();
-                          setState(() {
-                            _selectedCity =
-                                _cityController.text.trim().isEmpty
-                                    ? null
-                                    : _cityController.text.trim();
-                          });
-                          _performSearch(_searchController.text.trim());
-                        },
-                        icon: const Icon(Icons.filter_alt),
-                        label: const Text('Zastosuj filtry'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-          const SizedBox(height: 10),
-          if (hasActiveSearch)
-            _isSearching
-                ? const Center(child: CircularProgressIndicator())
-                : _searchResults.isEmpty
-                ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text('Brak wyników wyszukiwania.'),
-                  ),
-                )
-                : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _searchResults.length,
-                  itemBuilder: (context, index) {
-                    final doc = _searchResults[index];
-                    final data = doc.data() as Map<String, dynamic>;
-                    return ListTile(
-                      title: Text(data['title'] ?? ''),
-                      subtitle: Text(
-                        '${data['price']} PLN • ${data['city'] ?? ''}',
-                      ),
-                      onTap: () {
-                        FocusScope.of(context).unfocus();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ListingDetailsPage(listingDoc: doc),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                )
-          else ...[
-            const SizedBox(height: 40),
-            categoriesSection(categories, context),
-            const SizedBox(height: 40),
-            FutureBuilder<List<LatestSectionsModel>>(
-              future: latestSectionsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('❌ Błąd: ${snapshot.error}'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Brak ogłoszeń.'));
-                }
-
-                final sections = snapshot.data!;
-                return Column(
-                  children: [
-                    for (var section in sections) latestSection(section),
-                    const Center(child: Text('Furni © by MINT')),
+                      onChanged: (range) => setState(() => _priceRange = range),
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _selectedCity = null;
+                              _selectedCategory = null;
+                              _priceRange = const RangeValues(0, 10000);
+                              _cityController.clear();
+                            });
+                          },
+                          icon: const Icon(Icons.clear),
+                          label: const Text('Wyczyść filtry'),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            FocusScope.of(context).unfocus();
+                            setState(() {
+                              _selectedCity =
+                                  _cityController.text.trim().isEmpty
+                                      ? null
+                                      : _cityController.text.trim();
+                            });
+                            _performSearch(_searchController.text.trim());
+                          },
+                          icon: const Icon(Icons.filter_alt),
+                          label: const Text('Zastosuj filtry'),
+                        ),
+                      ],
+                    ),
                   ],
-                );
-              },
-            ),
+                ),
+              ),
+
+            const SizedBox(height: 10),
+            if (hasActiveSearch)
+              _isSearching
+                  ? const Center(child: CircularProgressIndicator())
+                  : _searchResults.isEmpty
+                  ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('Brak wyników wyszukiwania.'),
+                    ),
+                  )
+                  : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _searchResults.length,
+                    itemBuilder: (context, index) {
+                      final doc = _searchResults[index];
+                      final data = doc.data() as Map<String, dynamic>;
+                      return ListTile(
+                        title: Text(data['title'] ?? ''),
+                        subtitle: Text(
+                          '${data['price']} PLN • ${data['city'] ?? ''}',
+                        ),
+                        onTap: () {
+                          FocusScope.of(context).unfocus();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => ListingDetailsPage(listingDoc: doc),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  )
+            else ...[
+              const SizedBox(height: 40),
+              categoriesSection(categories, context),
+              const SizedBox(height: 40),
+              FutureBuilder<List<LatestSectionsModel>>(
+                future: latestSectionsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('❌ Błąd: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('Brak ogłoszeń.'));
+                  }
+
+                  final sections = snapshot.data!;
+                  return Column(
+                    children: [
+                      for (var section in sections) latestSection(section),
+                      const Center(child: Text('Furni © by MINT')),
+                    ],
+                  );
+                },
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
