@@ -26,6 +26,8 @@ class _HomePageState extends State<HomePage> {
   String? _selectedCategory;
   RangeValues _priceRange = const RangeValues(0, 10000);
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+
   List<CategoryModel> categories = CategoryModel.getCategories();
   Future<List<LatestSectionsModel>> latestSectionsFuture =
       LatestSectionsModel.getLatestSections();
@@ -69,8 +71,13 @@ class _HomePageState extends State<HomePage> {
             .where((w) => w.isNotEmpty)
             .toList();
 
+    final selectedCity =
+        _cityController.text.trim().isEmpty
+            ? null
+            : _cityController.text.trim();
+
     final hasFilters =
-        _selectedCity != null ||
+        selectedCity != null ||
         _selectedCategory != null ||
         _priceRange != const RangeValues(0, 10000);
 
@@ -125,7 +132,11 @@ class _HomePageState extends State<HomePage> {
 
   bool _filterDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final cityMatch = _selectedCity == null || data['city'] == _selectedCity;
+    final cityInput = _cityController.text.trim().toLowerCase();
+    final cityMatch =
+        cityInput.isEmpty ||
+        (data['userCity']?.toString().toLowerCase().contains(cityInput) ?? false);
+
     final categoryMatch =
         _selectedCategory == null || data['category'] == _selectedCategory;
     final rawPrice = data['price'];
@@ -145,6 +156,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _searchController.dispose();
     _debounce?.cancel();
+    _cityController.dispose();
     super.dispose();
   }
 
@@ -211,18 +223,17 @@ class _HomePageState extends State<HomePage> {
                     spacing: 10,
                     runSpacing: 10,
                     children: [
-                      _buildDropdown<String>(
-                        label: 'Miasto',
-                        value: _selectedCity,
-                        items: [
-                          'Warszawa',
-                          'Kraków',
-                          'Poznań',
-                          'Gdańsk',
-                          'Lublin',
-                        ],
-                        onChanged: (val) => setState(() => _selectedCity = val),
+                      SizedBox(
+                        width: 200,
+                        child: TextField(
+                          controller: _cityController,
+                          decoration: const InputDecoration(
+                            labelText: 'Miasto',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
                       ),
+
                       _buildDropdown<String>(
                         label: 'Kategoria',
                         value: _selectedCategory,
@@ -254,6 +265,7 @@ class _HomePageState extends State<HomePage> {
                             _selectedCity = null;
                             _selectedCategory = null;
                             _priceRange = const RangeValues(0, 10000);
+                            _cityController.clear();
                           });
                         },
                         icon: const Icon(Icons.clear),
@@ -262,6 +274,12 @@ class _HomePageState extends State<HomePage> {
                       ElevatedButton.icon(
                         onPressed: () {
                           FocusScope.of(context).unfocus();
+                          setState(() {
+                            _selectedCity =
+                                _cityController.text.trim().isEmpty
+                                    ? null
+                                    : _cityController.text.trim();
+                          });
                           _performSearch(_searchController.text.trim());
                         },
                         icon: const Icon(Icons.filter_alt),
