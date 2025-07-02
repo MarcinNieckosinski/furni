@@ -1,16 +1,6 @@
 # furniapp
 
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+A Flutter project that is an app for selling furniture called Furni :)
+Code is strucured in 3 main folders - components, models and pages.
+I tested in on Android emulator.
+I have used Visual Studio Code with Flutter.
