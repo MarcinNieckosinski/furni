@@ -96,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
         validator: (value) => Validator.validateLogin(login: value),
         keyboardType: TextInputType.emailAddress,
         decoration: const InputDecoration(
-          labelText: 'Login',
+          labelText: 'Email',
           border: OutlineInputBorder(),
         ),
       ),
@@ -172,7 +172,7 @@ class _LoginPageState extends State<LoginPage> {
           debugPrint(e.toString());
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Niepoprawny login lub hasło!'),
+              content: Text('Niepoprawny email lub hasło!'),
               backgroundColor: Colors.red,
             ),
           );

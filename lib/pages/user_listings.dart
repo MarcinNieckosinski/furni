@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:furniapp/pages/edit_listing.dart';
 import 'package:furniapp/pages/listing_details.dart';
 
@@ -21,24 +22,41 @@ class _UserListingsPageState extends State<UserListingsPage> {
   }
 
   void _fetchListings() {
-    _listingsFuture = FirebaseFirestore.instance
-        .collection('listings')
-        .orderBy('createdAt', descending: true)
-        .get();
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Musisz być zalogowany, aby zobaczyć swoje ogłoszenia.',
+          ),
+        ),
+      );
+      Navigator.of(context).pop();
+      return;
+    }
+
+    _listingsFuture =
+        FirebaseFirestore.instance
+            .collection('listings')
+            .where('userId', isEqualTo: user.uid)
+            .orderBy('createdAt', descending: true)
+            .get();
   }
 
   Future<String?> _getFirstImageUrl(String listingId) async {
     try {
-      final imagesSnap = await FirebaseFirestore.instance
-          .collection('listings')
-          .doc(listingId)
-          .collection('images')
-          .orderBy('position')
-          .limit(1)
-          .get();
+      final snap =
+          await FirebaseFirestore.instance
+              .collection('listings')
+              .doc(listingId)
+              .collection('images')
+              .orderBy('position')
+              .limit(1)
+              .get();
 
-      if (imagesSnap.docs.isNotEmpty) {
-        return imagesSnap.docs.first['url'] as String;
+      if (snap.docs.isNotEmpty) {
+        return snap.docs.first['url'] as String;
       }
     } catch (e) {
       debugPrint('Błąd ładowania miniatury: $e');
@@ -49,23 +67,24 @@ class _UserListingsPageState extends State<UserListingsPage> {
   void _confirmDelete(DocumentSnapshot listingDoc) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Usuń ogłoszenie'),
-        content: const Text('Czy na pewno chcesz usunąć to ogłoszenie?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Anuluj'),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Usuń ogłoszenie'),
+            content: const Text('Czy na pewno chcesz usunąć to ogłoszenie?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Anuluj'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _deleteListing(listingDoc);
+                },
+                child: const Text('Usuń', style: TextStyle(color: Colors.red)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _deleteListing(listingDoc);
-            },
-            child: const Text('Usuń', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 
@@ -75,23 +94,25 @@ class _UserListingsPageState extends State<UserListingsPage> {
     final storage = FirebaseStorage.instance;
 
     try {
-      // Usuń zdjęcia z subkolekcji
-      final imagesSnap = await firestore.collection('listings').doc(id).collection('images').get();
+      final imagesSnap =
+          await firestore
+              .collection('listings')
+              .doc(id)
+              .collection('images')
+              .get();
       for (final doc in imagesSnap.docs) {
         final url = doc['url'] as String;
         try {
           final ref = storage.refFromURL(url);
           await ref.delete();
         } catch (_) {}
-        await doc.reference.delete(); // usuń metadane
+        await doc.reference.delete();
       }
 
-      // Usuń ogłoszenie
       await firestore.collection('listings').doc(id).delete();
 
       if (mounted) {
-        _fetchListings();
-        setState(() {}); // odśwież widok
+        setState(_fetchListings);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ogłoszenie zostało usunięte')),
         );
@@ -107,7 +128,7 @@ class _UserListingsPageState extends State<UserListingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Moje ogłoszenia')),
+      appBar: AppBar(title: const Text('Twoje ogłoszenia')),
       body: FutureBuilder<QuerySnapshot>(
         future: _listingsFuture,
         builder: (context, snapshot) {
@@ -116,7 +137,9 @@ class _UserListingsPageState extends State<UserListingsPage> {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('Brak ogłoszeń.'));
+            return const Center(
+              child: Text('Nie masz jeszcze żadnych ogłoszeń.'),
+            );
           }
 
           final docs = snapshot.data!.docs;
@@ -135,19 +158,23 @@ class _UserListingsPageState extends State<UserListingsPage> {
                   final imageUrl = imgSnapshot.data;
 
                   return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: ListTile(
-                      leading: imageUrl != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                imageUrl,
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : const Icon(Icons.image_not_supported, size: 60),
+                      leading:
+                          imageUrl != null
+                              ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  imageUrl,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                              : const Icon(Icons.image_not_supported, size: 60),
                       title: Text(title),
                       subtitle: Text('Cena: $price PLN'),
                       trailing: Row(
@@ -159,7 +186,9 @@ class _UserListingsPageState extends State<UserListingsPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => EditListingPage(listingDoc: listing),
+                                  builder:
+                                      (_) =>
+                                          EditListingPage(listingDoc: listing),
                                 ),
                               );
                             },
@@ -174,7 +203,8 @@ class _UserListingsPageState extends State<UserListingsPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ListingDetailsPage(listingDoc: listing),
+                            builder:
+                                (_) => ListingDetailsPage(listingDoc: listing),
                           ),
                         );
                       },

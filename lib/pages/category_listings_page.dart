@@ -52,6 +52,7 @@ class CategoryListingsPage extends StatelessWidget {
               final data = doc.data() as Map<String, dynamic>;
               final title = data['title'] ?? '';
               final price = data['price'] ?? '';
+              final city = data['userCity'] ?? '';
 
               return FutureBuilder<String?>(
                 future: _getFirstImageUrl(doc.id),
@@ -73,7 +74,7 @@ class CategoryListingsPage extends StatelessWidget {
                             )
                           : const Icon(Icons.image_not_supported, size: 100),
                       title: Text(title),
-                      subtitle: Text('Cena: $price PLN'),
+                      subtitle: Text('Cena: $price PLN \nMiejscowość: $city'),
                       onTap: () {
                         Navigator.push(
                           context,

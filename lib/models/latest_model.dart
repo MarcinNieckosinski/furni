@@ -53,7 +53,7 @@ Future<List<LatestModel>> fetchLatest(String category) async {
       imagePath: imageUrl,
       shortDescription: data['shortDescription'] ?? 'No Description',
       price: data['price'] != null ? '${data['price']} PLN' : 'Price not available',
-      city: data['city'] ?? 'Unknown City',
+      city: data['userCity'] ?? 'Unknown City',
       date: (data['createdAt'] as Timestamp)
           .toDate()
           .toIso8601String()

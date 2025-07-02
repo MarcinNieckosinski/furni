@@ -24,6 +24,17 @@ class _AdditionPageState extends State<AdditionPage> {
   final List<File> _selectedImages = [];
   bool _isUploading = false;
 
+  List<String> _generateKeywords(List<String> texts) {
+  final allWords = <String>{};
+
+  for (final text in texts) {
+    final words = text.toLowerCase().split(RegExp(r'\s+'));
+    allWords.addAll(words.where((w) => w.length > 2));
+  }
+
+  return allWords.toList();
+}
+
   Future<void> _pickImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null && _selectedImages.length < 8) {
@@ -46,6 +57,18 @@ class _AdditionPageState extends State<AdditionPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('Brak użytkownika');
 
+      final userData = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final title = _titleController.text.trim();
+      final description = _descController.text.trim();
+      final city = userData['city'] ?? '';
+      final category = _selectedCategory!.name;
+
+      final keywords = _generateKeywords([title, description, city, category]);
+
       final listingRef = await FirebaseFirestore.instance
           .collection('listings')
           .add({
@@ -54,6 +77,10 @@ class _AdditionPageState extends State<AdditionPage> {
             'price': _priceController.text.trim(),
             'category': _selectedCategory!.name,
             'userId': user.uid,
+            'userLogin': userData['login'],
+            'userPhone': userData['phone'],
+            'userCity': userData['city'],
+            'keywords': keywords,
             'createdAt': FieldValue.serverTimestamp(),
           });
 
